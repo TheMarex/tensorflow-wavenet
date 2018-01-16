@@ -7,6 +7,7 @@ import threading
 import librosa
 import numpy as np
 import tensorflow as tf
+import audioread
 
 FILE_PATTERN = r'p([0-9]+)_([0-9]+)\.wav'
 
@@ -60,6 +61,7 @@ def load_generic_audio(directory, sample_rate, normalize_peak):
             audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
         except audioread.NoBackendError:
             print("Could not read audio file {}".format(filename))
+            continue
         audio = audio.reshape(-1, 1)
         if normalize_peak:
             audio = audio / np.max(audio)
