@@ -53,6 +53,8 @@ def get_arguments():
                         help='Whether to store advanced debugging information '
                         '(execution time, memory consumption) for use with '
                         'TensorBoard. Default: ' + str(METADATA) + '.')
+    parser.add_argument('--normalize_peak', type=bool, default=False,
+                        help='Whenever to normalize the peak of all audio files to `1.0`. Default: False.')
     parser.add_argument('--logdir', type=str, default=None,
                         help='Directory in which to store the logging '
                         'information for TensorBoard. '
@@ -225,7 +227,8 @@ def main():
                                                                    wavenet_params["scalar_input"],
                                                                    wavenet_params["initial_filter_width"]),
             sample_size=args.sample_size,
-            silence_threshold=silence_threshold)
+            silence_threshold=silence_threshold,
+            normalize_peak=args.normalize_peak)
         audio_batch = reader.dequeue(args.batch_size)
         if gc_enabled:
             gc_id_batch = reader.dequeue_gc(args.batch_size)

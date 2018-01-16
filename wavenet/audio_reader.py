@@ -41,7 +41,7 @@ def find_files(directory, pattern='*.wav'):
     return files
 
 
-def load_generic_audio(directory, sample_rate):
+def load_generic_audio(directory, sample_rate, normalize_peak):
     '''Generator that yields audio waveforms from the directory.'''
     files = find_files(directory)
     id_reg_exp = re.compile(FILE_PATTERN)
@@ -58,6 +58,8 @@ def load_generic_audio(directory, sample_rate):
             category_id = int(ids[0][0])
         audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
         audio = audio.reshape(-1, 1)
+        if normalize_peak:
+            audio = audio / np.max(audio)
         yield audio, filename, category_id
 
 
@@ -96,7 +98,8 @@ class AudioReader(object):
                  receptive_field,
                  sample_size=None,
                  silence_threshold=None,
-                 queue_size=32):
+                 queue_size=32,
+                 normalize_peak=False):
         self.audio_dir = audio_dir
         self.sample_rate = sample_rate
         self.coord = coord
@@ -110,6 +113,7 @@ class AudioReader(object):
                                          ['float32'],
                                          shapes=[(None, 1)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
+        self.normalize_peak = normalize_peak
 
         if self.gc_enabled:
             self.id_placeholder = tf.placeholder(dtype=tf.int32, shape=())
@@ -154,7 +158,7 @@ class AudioReader(object):
         stop = False
         # Go through the dataset multiple times
         while not stop:
-            iterator = load_generic_audio(self.audio_dir, self.sample_rate)
+            iterator = load_generic_audio(self.audio_dir, self.sample_rate, self.normalize_peak)
             for audio, filename, category_id in iterator:
                 if self.coord.should_stop():
                     stop = True
@@ -173,6 +177,7 @@ class AudioReader(object):
                                'constant')
 
                 if self.sample_size:
+                    print("{} : {}".format(filename, len(audio) / self.sample_rate))
                     # Cut samples into pieces of size receptive_field +
                     # sample_size with receptive_field overlap
                     while len(audio) > self.receptive_field:
