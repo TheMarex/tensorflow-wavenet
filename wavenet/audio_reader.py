@@ -56,7 +56,10 @@ def load_generic_audio(directory, sample_rate, normalize_peak):
         else:
             # The file name matches the pattern for containing ids.
             category_id = int(ids[0][0])
-        audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
+        try:
+            audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
+        except audioread.NoBackendError:
+            print("Could not read audio file {}".format(filename))
         audio = audio.reshape(-1, 1)
         if normalize_peak:
             audio = audio / np.max(audio)
