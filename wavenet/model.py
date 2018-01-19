@@ -397,12 +397,6 @@ class WaveNetModel(object):
         outputs = []
         current_layer = input_batch
 
-        # Pre-process the input with a regular convolution
-        if self.scalar_input:
-            initial_channels = 1
-        else:
-            initial_channels = self.quantization_channels
-
         current_layer = self._create_causal_layer(current_layer)
 
         output_width = tf.shape(input_batch)[1] - self.receptive_field + 1
@@ -453,12 +447,16 @@ class WaveNetModel(object):
         outputs = []
         current_layer = input_batch
 
+        initial_channels = self.quantization_channels
+        if self.scalar_input:
+            initial_channels = 1
+
         q = tf.FIFOQueue(
             1,
             dtypes=tf.float32,
-            shapes=(self.batch_size, self.quantization_channels))
+            shapes=(self.batch_size, initial_channels))
         init = q.enqueue_many(
-            tf.zeros((1, self.batch_size, self.quantization_channels)))
+            tf.zeros((1, self.batch_size, initial_channels)))
 
         current_state = q.dequeue()
         push = q.enqueue([current_layer])
@@ -578,7 +576,7 @@ class WaveNetModel(object):
         with tf.name_scope(name):
             if self.scalar_input:
                 encoded = tf.cast(waveform, tf.float32)
-                encoded = tf.reshape(encoded, [-1, 1])
+                encoded = tf.reshape(encoded, [self.batch_size, -1, 1])
             else:
                 encoded = self._one_hot(waveform)
 
@@ -602,12 +600,13 @@ class WaveNetModel(object):
         if self.filter_width > 2:
             raise NotImplementedError("Incremental generation does not "
                                       "support filter_width > 2.")
-        if self.scalar_input:
-            raise NotImplementedError("Incremental generation does not "
-                                      "support scalar input yet.")
         with tf.name_scope(name):
-            encoded = tf.one_hot(waveform, self.quantization_channels)
-            encoded = tf.reshape(encoded, [-1, self.quantization_channels])
+            if self.scalar_input:
+                encoded = tf.cast(waveform, tf.float32)
+                encoded = tf.reshape(encoded, [-1, 1])
+            else:
+                encoded = self._one_hot(waveform)
+                encoded = tf.reshape(encoded, [-1, self.quantization_channels])
             gc_embedding = self._embed_gc(global_condition)
             raw_output = self._create_generator(encoded, gc_embedding)
             out = tf.reshape(raw_output, [-1, self.quantization_channels])
