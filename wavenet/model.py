@@ -16,7 +16,7 @@ def create_embedding_table(name, shape):
     if shape[0] == shape[1]:
         # Make a one-hot encoding as the initial value.
         initial_val = np.identity(n=shape[0], dtype=np.float32)
-        return tf.get_variable(name, initial_val)
+        return tf.get_variable(name, initializer=initial_val)
     else:
         return create_variable(name, shape)
 
