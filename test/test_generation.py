@@ -8,13 +8,15 @@ from wavenet import WaveNetModel
 class TestGeneration(tf.test.TestCase):
 
     def setUp(self):
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64, 128, 256],
-                                filter_width=2,
-                                residual_channels=16,
-                                dilation_channels=16,
-                                quantization_channels=128,
-                                skip_channels=32)
+        with tf.variable_scope('test_generation', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16,
+                                               32, 64, 128, 256],
+                                    filter_width=2,
+                                    residual_channels=16,
+                                    dilation_channels=16,
+                                    quantization_channels=128,
+                                    skip_channels=32)
 
     def testGenerateSimple(self):
         '''Generate a few samples using the naive method and
@@ -75,14 +77,32 @@ class TestGeneration(tf.test.TestCase):
 class TestGenerationBiases(TestGeneration):
 
     def setUp(self):
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64, 128, 256],
-                                filter_width=2,
-                                use_biases=True,
-                                residual_channels=16,
-                                dilation_channels=16,
-                                quantization_channels=128,
-                                skip_channels=32)
+        with tf.variable_scope('test_generation_biases', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16,
+                                               32, 64, 128, 256],
+                                    filter_width=2,
+                                    use_biases=True,
+                                    residual_channels=16,
+                                    dilation_channels=16,
+                                    quantization_channels=128,
+                                    skip_channels=32)
+
+
+class TestGenerationScalar(TestGeneration):
+
+    def setUp(self):
+        with tf.variable_scope('test_generation_scalar', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16, 32,
+                                               64, 128, 256],
+                                    filter_width=2,
+                                    use_biases=True,
+                                    scalar_input=True,
+                                    residual_channels=16,
+                                    dilation_channels=16,
+                                    quantization_channels=128,
+                                    skip_channels=32)
 
 
 if __name__ == '__main__':

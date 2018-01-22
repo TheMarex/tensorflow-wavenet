@@ -163,7 +163,9 @@ class AudioReader(object):
         stop = False
         # Go through the dataset multiple times
         while not stop:
-            iterator = load_generic_audio(self.audio_dir, self.sample_rate, self.normalize_peak)
+            iterator = load_generic_audio(self.audio_dir,
+                                          self.sample_rate,
+                                          self.normalize_peak)
             for audio, filename, category_id in iterator:
                 if self.coord.should_stop():
                     stop = True
@@ -182,7 +184,8 @@ class AudioReader(object):
                                'constant')
 
                 if self.sample_size:
-                    print("{} : {}".format(filename, len(audio) / self.sample_rate))
+                    print("{} : {}".format(filename,
+                                           len(audio) / self.sample_rate))
                     # Cut samples into pieces of size receptive_field +
                     # sample_size with receptive_field overlap
                     while len(audio) > self.receptive_field:

@@ -15,7 +15,7 @@ SAMPLE_DURATION = 0.5  # Seconds
 SAMPLE_PERIOD_SECS = 1.0 / SAMPLE_RATE_HZ
 MOMENTUM = 0.95
 GENERATE_SAMPLES = 1000
-QUANTIZATION_CHANNELS = 256
+QC = 256
 NUM_SPEAKERS = 3
 F1 = 155.56  # E-flat frequency in hz
 F2 = 196.00  # G frequency in hz
@@ -80,13 +80,13 @@ def generate_waveform(sess, net, fast_generation, gc, samples_placeholder,
         results = sess.run(operations, feed_dict=feed_dict)
 
         sample = np.random.choice(
-           np.arange(QUANTIZATION_CHANNELS), p=results[0])
+           np.arange(QC), p=results[0])
         waveform.append(sample)
 
     # Skip the first number of samples equal to the size of the receptive
     # field minus one.
     waveform = np.array(waveform[net.receptive_field - 1:])
-    decode = mu_law_decode(samples_placeholder, QUANTIZATION_CHANNELS)
+    decode = mu_law_decode(samples_placeholder, QC)
     decoded_waveform = sess.run(decode,
                                 feed_dict={samples_placeholder: waveform})
     return decoded_waveform
@@ -181,16 +181,18 @@ class TestNet(tf.test.TestCase):
         self.momentum = MOMENTUM
         self.global_conditioning = False
         self.train_iters = TRAIN_ITERATIONS
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64,
-                                           1, 2, 4, 8, 16, 32, 64],
-                                filter_width=2,
-                                residual_channels=32,
-                                dilation_channels=32,
-                                quantization_channels=QUANTIZATION_CHANNELS,
-                                skip_channels=32,
-                                global_condition_channels=None,
-                                global_condition_cardinality=None)
+
+        with tf.variable_scope('test_net', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16, 32, 64,
+                                               1, 2, 4, 8, 16, 32, 64],
+                                    filter_width=2,
+                                    residual_channels=32,
+                                    dilation_channels=32,
+                                    quantization_channels=QC,
+                                    skip_channels=32,
+                                    global_condition_channels=None,
+                                    global_condition_cardinality=None)
 
     def _save_net(sess):
         saver = tf.train.Saver(var_list=tf.trainable_variables())
@@ -304,15 +306,16 @@ class TestNetWithBiases(TestNet):
         print('TestNetWithBias setup.')
         sys.stdout.flush()
 
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64,
-                                           1, 2, 4, 8, 16, 32, 64],
-                                filter_width=2,
-                                residual_channels=32,
-                                dilation_channels=32,
-                                quantization_channels=QUANTIZATION_CHANNELS,
-                                use_biases=True,
-                                skip_channels=32)
+        with tf.variable_scope('test_net_with_biases', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16, 32, 64,
+                                               1, 2, 4, 8, 16, 32, 64],
+                                    filter_width=2,
+                                    residual_channels=32,
+                                    dilation_channels=32,
+                                    quantization_channels=QC,
+                                    use_biases=True,
+                                    skip_channels=32)
         self.optimizer_type = 'sgd'
         self.learning_rate = 0.02
         self.generate = False
@@ -327,14 +330,15 @@ class TestNetWithRMSProp(TestNet):
         print('TestNetWithRMSProp setup.')
         sys.stdout.flush()
 
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64,
-                                           1, 2, 4, 8, 16, 32, 64],
-                                filter_width=2,
-                                residual_channels=32,
-                                dilation_channels=32,
-                                quantization_channels=QUANTIZATION_CHANNELS,
-                                skip_channels=256)
+        with tf.variable_scope('test_net_with_rms_prop', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16, 32, 64,
+                                               1, 2, 4, 8, 16, 32, 64],
+                                    filter_width=2,
+                                    residual_channels=32,
+                                    dilation_channels=32,
+                                    quantization_channels=QC,
+                                    skip_channels=256)
         self.optimizer_type = 'rmsprop'
         self.learning_rate = 0.001
         self.generate = True
@@ -349,17 +353,18 @@ class TestNetWithScalarInput(TestNet):
         print('TestNetWithScalarInput setup.')
         sys.stdout.flush()
 
-        self.net = WaveNetModel(batch_size=1,
-                                dilations=[1, 2, 4, 8, 16, 32, 64,
-                                           1, 2, 4, 8, 16, 32, 64],
-                                filter_width=2,
-                                residual_channels=32,
-                                dilation_channels=32,
-                                quantization_channels=QUANTIZATION_CHANNELS,
-                                use_biases=True,
-                                skip_channels=32,
-                                scalar_input=True,
-                                initial_filter_width=4)
+        with tf.variable_scope('test_net_with_scalar', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=1,
+                                    dilations=[1, 2, 4, 8, 16, 32, 64,
+                                               1, 2, 4, 8, 16, 32, 64],
+                                    filter_width=2,
+                                    residual_channels=32,
+                                    dilation_channels=32,
+                                    quantization_channels=QC,
+                                    use_biases=True,
+                                    skip_channels=32,
+                                    scalar_input=True,
+                                    initial_filter_width=4)
         self.optimizer_type = 'sgd'
         self.learning_rate = 0.01
         self.generate = False
@@ -379,17 +384,18 @@ class TestNetWithGlobalConditioning(TestNet):
         self.momentum = MOMENTUM
         self.global_conditioning = True
         self.train_iters = 1000
-        self.net = WaveNetModel(batch_size=NUM_SPEAKERS,
-                                dilations=[1, 2, 4, 8, 16, 32, 64,
-                                           1, 2, 4, 8, 16, 32, 64],
-                                filter_width=2,
-                                residual_channels=32,
-                                dilation_channels=32,
-                                quantization_channels=QUANTIZATION_CHANNELS,
-                                use_biases=True,
-                                skip_channels=256,
-                                global_condition_channels=NUM_SPEAKERS,
-                                global_condition_cardinality=NUM_SPEAKERS)
+        with tf.variable_scope('test_net_with_gc', reuse=tf.AUTO_REUSE):
+            self.net = WaveNetModel(batch_size=NUM_SPEAKERS,
+                                    dilations=[1, 2, 4, 8, 16, 32, 64,
+                                               1, 2, 4, 8, 16, 32, 64],
+                                    filter_width=2,
+                                    residual_channels=32,
+                                    dilation_channels=32,
+                                    quantization_channels=QC,
+                                    use_biases=True,
+                                    skip_channels=256,
+                                    global_condition_channels=NUM_SPEAKERS,
+                                    global_condition_cardinality=NUM_SPEAKERS)
 
 
 if __name__ == '__main__':
