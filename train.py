@@ -15,15 +15,20 @@ import sys
 import time
 
 import tensorflow as tf
-from tensorflow.python.client import timeline
+from tensorflow.python.client import timeline, device_lib
 
 from wavenet import WaveNetModel, AudioReader, optimizer_factory
+
+def get_num_available_gpus():
+    local_device_protos = device_lib.list_local_devices()
+    return len([x.name for x in local_device_protos if x.device_type == 'GPU'])
 
 BATCH_SIZE = 1
 DATA_DIRECTORY = './VCTK-Corpus'
 LOGDIR_ROOT = './logdir'
 CHECKPOINT_EVERY = 50
 NUM_STEPS = int(1e5)
+NUM_GPUS = get_num_available_gpus()
 LEARNING_RATE = 1e-3
 WAVENET_PARAMS = './wavenet_params.json'
 STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
@@ -35,6 +40,21 @@ MOMENTUM = 0.9
 MAX_TO_KEEP = 5
 METADATA = False
 
+def make_model(args, wavenet_params, reader):
+    return WaveNetModel(
+        batch_size=args.batch_size,
+        dilations=wavenet_params["dilations"],
+        filter_width=wavenet_params["filter_width"],
+        residual_channels=wavenet_params["residual_channels"],
+        dilation_channels=wavenet_params["dilation_channels"],
+        skip_channels=wavenet_params["skip_channels"],
+        quantization_channels=wavenet_params["quantization_channels"],
+        use_biases=wavenet_params["use_biases"],
+        scalar_input=wavenet_params["scalar_input"],
+        initial_filter_width=wavenet_params["initial_filter_width"],
+        histograms=args.histograms,
+        global_condition_channels=args.gc_channels,
+        global_condition_cardinality=reader.gc_category_cardinality)
 
 def get_arguments():
     def _str_to_bool(s):
@@ -76,6 +96,8 @@ def get_arguments():
                         help='How many steps to save each checkpoint after. Default: ' + str(CHECKPOINT_EVERY) + '.')
     parser.add_argument('--num_steps', type=int, default=NUM_STEPS,
                         help='Number of training steps. Default: ' + str(NUM_STEPS) + '.')
+    parser.add_argument('--num_gpus', type=int, default=NUM_GPUS,
+                        help='Number of GPUS to use. Default: ' + str(NUM_GPUS) + '.')
     parser.add_argument('--learning_rate', type=float, default=LEARNING_RATE,
                         help='Learning rate for training. Default: ' + str(LEARNING_RATE) + '.')
     parser.add_argument('--wavenet_params', type=str, default=WAVENET_PARAMS,
@@ -119,7 +141,6 @@ def save(saver, sess, logdir, step):
 
     saver.save(sess, checkpoint_path, global_step=step)
     print(' Done.')
-
 
 def load(saver, sess, logdir):
     print("Trying to restore saved checkpoints from {} ...".format(logdir),
@@ -229,38 +250,64 @@ def main():
             sample_size=args.sample_size,
             silence_threshold=silence_threshold,
             normalize_peak=args.normalize_peak)
-        audio_batch = reader.dequeue(args.batch_size)
         if gc_enabled:
             gc_id_batch = reader.dequeue_gc(args.batch_size)
         else:
             gc_id_batch = None
 
-    # Create network.
-    net = WaveNetModel(
-        batch_size=args.batch_size,
-        dilations=wavenet_params["dilations"],
-        filter_width=wavenet_params["filter_width"],
-        residual_channels=wavenet_params["residual_channels"],
-        dilation_channels=wavenet_params["dilation_channels"],
-        skip_channels=wavenet_params["skip_channels"],
-        quantization_channels=wavenet_params["quantization_channels"],
-        use_biases=wavenet_params["use_biases"],
-        scalar_input=wavenet_params["scalar_input"],
-        initial_filter_width=wavenet_params["initial_filter_width"],
-        histograms=args.histograms,
-        global_condition_channels=args.gc_channels,
-        global_condition_cardinality=reader.gc_category_cardinality)
-
     if args.l2_regularization_strength == 0:
         args.l2_regularization_strength = None
-    loss = net.loss(input_batch=audio_batch,
-                    global_condition_batch=gc_id_batch,
-                    l2_regularization_strength=args.l2_regularization_strength)
-    optimizer = optimizer_factory[args.optimizer](
-                    learning_rate=args.learning_rate,
-                    momentum=args.momentum)
-    trainable = tf.trainable_variables()
-    optim = optimizer.minimize(loss, var_list=trainable)
+
+    if args.num_gpus <= 1:
+        print("Falling back to single computation unit.")
+        audio_batch = reader.dequeue(args.batch_size)
+        net = make_model(args, wavenet_params, reader)
+        loss = net.loss(input_batch=audio_batch,
+                        global_condition_batch=gc_id_batch,
+                        l2_regularization_strength=args.l2_regularization_strength)
+        optimizer = optimizer_factory[args.optimizer](
+                        learning_rate=args.learning_rate,
+                        momentum=args.momentum)
+        trainable = tf.trainable_variables()
+        optim = optimizer.minimize(loss, var_list=trainable)
+    else:
+        print("Using {} GPUs for compuation.".format(args.num_gpus))
+        losses = []
+        gradients = []
+        for i in range(args.num_gpus):
+            with tf.device('/gpu:%d' % i):
+                with tf.variable_scope(name, reuse= i>0):
+                    audio_batch = reader.dequeue(args.batch_size)
+                    net = make_model(args, wavenet_params, reader)
+                    loss = net.loss(input_batch=audio_batch,
+                                    global_condition_batch=gc_id_batch,
+                                    l2_regularization_strength=args.l2_regularization_strength)
+                    optimizer = optimizer_factory[args.optimizer](
+                                    learning_rate=args.learning_rate,
+                                    momentum=args.momentum)
+                    trainable = tf.trainable_variables()
+                    gradient = optimizer.compute_gradients(loss, var_list=trainable)
+                    losses.append(loss)
+                    gradients.append(gradient)
+
+            with tf.device('/gpu:0'):
+                loss = tf.reduce_mean(losses)
+                average_gradients = []
+                for grouped_gradients in zip(*gradients):
+                    expanded_gradients = []
+                    for gradient, _ in grouped_gradients:
+                        if gradient:
+                            expanded_gradients.append(tf.expand_dims(gradient, 0))
+                    expanded_gradients = tf.concat(0, expanded_gradients)
+                    average_gradient = tf.reduce_mean(expanded_gradients, 0)
+
+                    # Since all GPUs share the same variable we can just the the one from gpu:0
+                    _, variable = grouped_gradients[0]
+                    if len(expanded_gradients) == 0:
+                        average_gradients.append((None, variable))
+                    else:
+                        average_gradients.append((average_gradient, variable))
+                optim = optimizer.apply_gradients(average_gradients)
 
     # Set up logging for TensorBoard.
     writer = tf.summary.FileWriter(logdir)
@@ -269,7 +316,10 @@ def main():
     summaries = tf.summary.merge_all()
 
     # Set up session
-    sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
+    config = tf.ConfigProto(log_device_placement=False, allow_soft_placement=True)
+    # Workaround for avoiding allocating memory on all GPUs due to tensorflow#8021
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
     init = tf.global_variables_initializer()
     sess.run(init)
 
