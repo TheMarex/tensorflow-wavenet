@@ -272,42 +272,46 @@ def main():
         optim = optimizer.minimize(loss, var_list=trainable)
     else:
         print("Using {} GPUs for compuation.".format(args.num_gpus))
+        with tf.device('/gpu:0'), tf.name_scope('tower_0'):
+            optimizer = optimizer_factory[args.optimizer](
+                            learning_rate=args.learning_rate,
+                            momentum=args.momentum)
         losses = []
         gradients = []
-        for i in range(args.num_gpus):
-            with tf.device('/gpu:%d' % i):
-                with tf.variable_scope(name, reuse= i>0):
+        with tf.variable_scope(tf.get_variable_scope()) as scope:
+            for i in range(args.num_gpus):
+                with tf.device('/gpu:%d' % i), tf.name_scope('tower_%d' % i):
                     audio_batch = reader.dequeue(args.batch_size)
                     net = make_model(args, wavenet_params, reader)
                     loss = net.loss(input_batch=audio_batch,
                                     global_condition_batch=gc_id_batch,
                                     l2_regularization_strength=args.l2_regularization_strength)
-                    optimizer = optimizer_factory[args.optimizer](
-                                    learning_rate=args.learning_rate,
-                                    momentum=args.momentum)
                     trainable = tf.trainable_variables()
                     gradient = optimizer.compute_gradients(loss, var_list=trainable)
                     losses.append(loss)
                     gradients.append(gradient)
+                    scope.reuse_variables()
 
-            with tf.device('/gpu:0'):
-                loss = tf.reduce_mean(losses)
-                average_gradients = []
-                for grouped_gradients in zip(*gradients):
-                    expanded_gradients = []
-                    for gradient, _ in grouped_gradients:
-                        if gradient:
-                            expanded_gradients.append(tf.expand_dims(gradient, 0))
-                    expanded_gradients = tf.concat(0, expanded_gradients)
-                    average_gradient = tf.reduce_mean(expanded_gradients, 0)
+        with tf.device('/gpu:0'), tf.name_scope('tower_0'):
+            loss = tf.reduce_mean(losses)
+            average_gradients = []
+            for grouped_gradients in zip(*gradients):
+                expanded_gradients = []
+                for gradient, _ in grouped_gradients:
+                    if gradient is not None:
+                        expanded_gradients.append(tf.expand_dims(gradient, 0))
 
-                    # Since all GPUs share the same variable we can just the the one from gpu:0
-                    _, variable = grouped_gradients[0]
-                    if len(expanded_gradients) == 0:
-                        average_gradients.append((None, variable))
-                    else:
-                        average_gradients.append((average_gradient, variable))
-                optim = optimizer.apply_gradients(average_gradients)
+                # Since all GPUs share the same variable we can just the the one from gpu:0
+                _, variable = grouped_gradients[0]
+                if len(expanded_gradients) == 0:
+                    print('No gradient for %s' % variable.name)
+                    average_gradients.append((None, variable))
+                    continue
+
+                merged_gradients = tf.concat(expanded_gradients, 0)
+                average_gradient = tf.reduce_mean(merged_gradients, 0)
+                average_gradients.append((average_gradient, variable))
+            optim = optimizer.apply_gradients(average_gradients)
 
     # Set up logging for TensorBoard.
     writer = tf.summary.FileWriter(logdir)
