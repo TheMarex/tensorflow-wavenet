@@ -119,6 +119,9 @@ class AudioReader(object):
                                          shapes=[(None, 1)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
         self.normalize_peak = normalize_peak
+        self.epoch = tf.get_variable('epoch', initializer=0, trainable=False)
+        tf.summary.scalar('epoch', self.epoch)
+        self.increment_epoch_op = tf.assign(self.epoch, self.epoch+1)
 
         if self.gc_enabled:
             self.id_placeholder = tf.placeholder(dtype=tf.int32, shape=())
@@ -203,6 +206,9 @@ class AudioReader(object):
                     if self.gc_enabled:
                         sess.run(self.gc_enqueue,
                                  feed_dict={self.id_placeholder: category_id})
+
+            print("Finished epoch.")
+            sess.run(self.increment_epoch_op)
 
     def start_threads(self, sess, n_threads=1):
         for _ in range(n_threads):
