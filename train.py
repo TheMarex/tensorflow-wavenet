@@ -249,7 +249,8 @@ def main():
                                                                    wavenet_params["initial_filter_width"]),
             sample_size=args.sample_size,
             silence_threshold=silence_threshold,
-            normalize_peak=args.normalize_peak)
+            normalize_peak=args.normalize_peak,
+            queue_size=32*max(args.num_gpus, 1))
         if gc_enabled:
             gc_id_batch = reader.dequeue_gc(args.batch_size)
         else:
