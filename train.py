@@ -40,7 +40,7 @@ MOMENTUM = 0.9
 MAX_TO_KEEP = 5
 METADATA = False
 
-def make_model(args, wavenet_params, reader):
+def make_model(args, wavenet_params, reader, i=0):
     return WaveNetModel(
         batch_size=args.batch_size,
         dilations=wavenet_params["dilations"],
@@ -52,7 +52,7 @@ def make_model(args, wavenet_params, reader):
         use_biases=wavenet_params["use_biases"],
         scalar_input=wavenet_params["scalar_input"],
         initial_filter_width=wavenet_params["initial_filter_width"],
-        histograms=args.histograms,
+        histograms=args.histograms and i == 0, # Don't log histograms for all towers
         global_condition_channels=args.gc_channels,
         global_condition_cardinality=reader.gc_category_cardinality)
 
@@ -287,7 +287,7 @@ def main():
             for i in range(args.num_gpus):
                 with tf.device('/gpu:%d' % i), tf.name_scope('tower_%d' % i):
                     audio_batch = reader.dequeue(args.batch_size)
-                    net = make_model(args, wavenet_params, reader)
+                    net = make_model(args, wavenet_params, reader, i)
                     loss = net.loss(input_batch=audio_batch,
                                     global_condition_batch=gc_id_batch,
                                     l2_regularization_strength=args.l2_regularization_strength)
