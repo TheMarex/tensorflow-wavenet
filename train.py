@@ -270,7 +270,11 @@ def main():
                         learning_rate=args.learning_rate,
                         momentum=args.momentum)
         trainable = tf.trainable_variables()
-        optim = optimizer.minimize(loss, var_list=trainable)
+        gradients = optimizer.compute_gradients(loss, var_list=trainable)
+        for gradient, variable in gradients:
+            if gradient is not None:
+                tf.summary.scalar(variable.name + '/gradient', tf.norm(gradient))
+        optim = optimizer.apply_gradients(gradients)
     else:
         print("Using {} GPUs for compuation.".format(args.num_gpus))
         with tf.device('/gpu:0'), tf.name_scope('tower_0'):
@@ -295,6 +299,7 @@ def main():
 
         with tf.device('/gpu:0'), tf.name_scope('tower_0'):
             loss = tf.reduce_mean(losses)
+            tf.summary.scalar('mean_total_loss', loss)
             average_gradients = []
             for grouped_gradients in zip(*gradients):
                 expanded_gradients = []
@@ -309,9 +314,12 @@ def main():
                     average_gradients.append((None, variable))
                     continue
 
+
                 merged_gradients = tf.concat(expanded_gradients, 0)
                 average_gradient = tf.reduce_mean(merged_gradients, 0)
                 average_gradients.append((average_gradient, variable))
+
+                tf.summary.scalar(variable.name + '/gradient', tf.norm(average_gradient))
             optim = optimizer.apply_gradients(average_gradients)
 
     # Set up logging for TensorBoard.
