@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime
 import json
 import os
+import re
 
 import librosa
 import numpy as np
@@ -37,7 +38,7 @@ def get_arguments():
 
     parser = argparse.ArgumentParser(description='WaveNet generation script')
     parser.add_argument(
-        'checkpoint', type=str, help='Which model checkpoint to generate from')
+        'checkpoint', type=str, help='Which model checkpoint to generate from', nargs='+')
     parser.add_argument(
         '--samples',
         type=int,
@@ -131,7 +132,6 @@ def create_seed(filename,
 
     return quantized[:cut_index]
 
-
 def main():
     args = get_arguments()
     started_datestring = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
@@ -139,8 +139,12 @@ def main():
     with open(args.wavenet_params, 'r') as config_file:
         wavenet_params = json.load(config_file)
 
-    sess = tf.Session()
+    for cp in args.checkpoint:
+        tf.reset_default_graph()
+        with tf.Session() as sess:
+            generate(sess, args, wavenet_params, logdir, cp)
 
+def generate(sess, args, wavenet_params, logdir, checkpoint):
     net = WaveNetModel(
         batch_size=1,
         dilations=wavenet_params['dilations'],
@@ -171,8 +175,8 @@ def main():
         if not ('state_buffer' in var.name or 'pointer' in var.name)}
     saver = tf.train.Saver(variables_to_restore)
 
-    print('Restoring model from {}'.format(args.checkpoint))
-    saver.restore(sess, args.checkpoint)
+    print('Restoring model from {}'.format(checkpoint))
+    saver.restore(sess, checkpoint)
 
     decode = mu_law_decode(samples, wavenet_params['quantization_channels'])
 
@@ -258,21 +262,24 @@ def main():
     # Introduce a newline to clear the carriage return from the progress.
     print()
 
-    # Save the result as an audio summary.
-    datestring = str(datetime.now()).replace(' ', 'T')
-    writer = tf.summary.FileWriter(logdir)
-    tf.summary.audio('generated', decode, wavenet_params['sample_rate'])
-    summaries = tf.summary.merge_all()
-    summary_out = sess.run(summaries,
-                           feed_dict={samples: np.reshape(waveform, [-1, 1])})
-    writer.add_summary(summary_out)
 
     # Save the result as a wav file.
     if args.wav_out_path:
+        num_steps = re.search('model.ckpt-(\d+)', checkpoint).group(1)
         out = sess.run(decode, feed_dict={samples: waveform})
-        write_wav(out, wavenet_params['sample_rate'], args.wav_out_path)
+        out_path = args.wav_out_path.replace('.wav', "_{}.wav".format(num_steps))
+        write_wav(out, wavenet_params['sample_rate'], out_path)
+    else:
+        # Save the result as an audio summary.
+        datestring = str(datetime.now()).replace(' ', 'T')
+        writer = tf.summary.FileWriter(logdir)
+        tf.summary.audio('generated', decode, wavenet_params['sample_rate'])
+        summaries = tf.summary.merge_all()
+        summary_out = sess.run(summaries,
+                               feed_dict={samples: np.reshape(waveform, [-1, 1])})
+        writer.add_summary(summary_out)
 
-    print('Finished generating. The result can be viewed in TensorBoard.')
+        print('Finished generating. The result can be viewed in TensorBoard.')
 
 
 if __name__ == '__main__':
