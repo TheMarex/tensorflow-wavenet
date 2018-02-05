@@ -56,7 +56,8 @@ class WaveNetModel(object):
                  initial_filter_width=32,
                  histograms=False,
                  global_condition_channels=None,
-                 global_condition_cardinality=None):
+                 global_condition_cardinality=None,
+                 gausian_noise=None):
         '''Initializes the WaveNet model.
 
         Args:
@@ -108,6 +109,7 @@ class WaveNetModel(object):
         self.histograms = histograms
         self.global_condition_channels = global_condition_channels
         self.global_condition_cardinality = global_condition_cardinality
+        self.gausian_noise = gausian_noise
 
         self.receptive_field = WaveNetModel.calculate_receptive_field(
             self.filter_width, self.dilations, self.scalar_input,
@@ -396,6 +398,9 @@ class WaveNetModel(object):
         '''Construct the WaveNet network.'''
         outputs = []
         current_layer = input_batch
+
+        if self.gausian_noise is not None:
+            current_layer = input_batch + self.gausian_noise * tf.random_normal(shape=tf.shape(input_batch), mean=0.0, stddev=1.0)
 
         current_layer = self._create_causal_layer(current_layer)
 

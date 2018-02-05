@@ -54,7 +54,8 @@ def make_model(args, wavenet_params, reader, i=0):
         initial_filter_width=wavenet_params["initial_filter_width"],
         histograms=args.histograms and i == 0, # Don't log histograms for all towers
         global_condition_channels=args.gc_channels,
-        global_condition_cardinality=reader.gc_category_cardinality)
+        global_condition_cardinality=reader.gc_category_cardinality,
+        gausian_noise=args.gausian_noise)
 
 def get_arguments():
     def _str_to_bool(s):
@@ -75,6 +76,8 @@ def get_arguments():
                         'TensorBoard. Default: ' + str(METADATA) + '.')
     parser.add_argument('--normalize_peak', type=bool, default=False,
                         help='Whenever to normalize the peak of all audio files to `1.0`. Default: False.')
+    parser.add_argument('--gausian_noise', type=float, default=None,
+                        help='Adds N(0, 1) noise to the input layer to learn denoising properties. Default: None.')
     parser.add_argument('--logdir', type=str, default=None,
                         help='Directory in which to store the logging '
                         'information for TensorBoard. '
