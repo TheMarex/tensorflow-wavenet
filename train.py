@@ -396,7 +396,7 @@ def main():
         # is on its own line.
         print()
     finally:
-        if step > last_saved_step:
+        if step is not None and step > last_saved_step:
             save(saver, sess, logdir, step)
         coord.request_stop()
         coord.join(threads)
