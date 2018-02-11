@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e
 
 S3_REGION=${S3_REGION:-"us-west-2"}
 
