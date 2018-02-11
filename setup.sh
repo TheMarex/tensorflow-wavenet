@@ -13,7 +13,7 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt update -yy
 sudo apt upgrade -yy
 
-sudo apt install -yy openjdk-8-jdk virtualenv libasound2-dev htop python3-dev bazel jemalloc-dev g++-7 libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev cmake
+sudo apt install -yy openjdk-8-jdk virtualenv libasound2-dev htop python3-dev bazel libjemalloc-dev g++-7 libcurl4-openssl-dev libssl-dev uuid-dev zlib1g-dev libpulse-dev cmake
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 virtualenv -p /usr/bin/python3.5 tf
