@@ -2,8 +2,6 @@
 
 set -e
 
-S3_REGION=${S3_REGION:-"us-west-2"}
-
 pushd $HOME
 
 echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
@@ -29,7 +27,7 @@ git clone https://github.com/aws/aws-sdk-cpp.git
 pushd aws-sdk-cpp
 mkdir build
 pushd build
-cmake ..  -DBUILD_ONLY="s3" -DCMAKE_BUILD_TYEPE=Relase -DAUTORUN_UNIT_TESTS=Off -DENABLE_TESTING=Off
+cmake ..  -DBUILD_ONLY="s3" -DCMAKE_BUILD_TYEPE=Release -DAUTORUN_UNIT_TESTS=Off -DENABLE_TESTING=Off
 make -j4
 sudo make install
 popd
@@ -46,8 +44,10 @@ bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
 sudo pip install /tmp/tensorflow_pkg/*.whl
 popd
 
+popd
+
 mkdir datasets
-aws s3 cp --recusrive s3://wavenet-data/datasets/breakbeats datasets
+aws s3 cp --recursive s3://wavenet-data/datasets/breakbeats datasets
 
 pushd tensorflow-wavenet
 ./train.sh
