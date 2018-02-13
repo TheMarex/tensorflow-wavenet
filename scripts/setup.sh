@@ -17,11 +17,11 @@ echo "export LD_LIBRARY_PATH=/usr/local/cuda-9.0/lib64/:${LD_LIBRARY_PATH}" >> ~
 echo "export CUDA_HOME=/usr/local/cuda-9.0" >> ~/.bashrc
 echo "source ~/tf/bin/activate" >> ~/.bashrc
 
-source ~/.bashrc
+source ~/tf/bin/activate
 
 pip install magenta-gpu
 
-mkdir datasets
-aws s3 cp --recursive s3://wavenet-data/datasets/breakbeats datasets
+mkdir -p datasets/breakbeats
+aws s3 cp --recursive s3://wavenet-data/datasets/breakbeats datasets/breakbeats
 
 popd
