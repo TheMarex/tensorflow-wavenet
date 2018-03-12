@@ -4,8 +4,8 @@ set -e
 
 cd "${0%/*}"
 
-MODEL_DIR="s3://wavenet-data/models/wavenet/abstraction_5x2_2048_4s"
-OUTPUT_DIR="s3://wavenet-data/outputs/wavenet/abstraction_5x2_2048_4s"
+MODEL_DIR="s3://wavenet-data/models/wavenet/abstraction_5x2_2048_4s_x10"
+OUTPUT_DIR="s3://wavenet-data/outputs/wavenet/abstraction_5x2_2048_4s_x10"
 TRAIN_PARAMS="--data_dir=../training/abstraction --sample_size=64000 --logdir=${MODEL_DIR} --gausian_noise=0.01 --batch_size=3 --silence_threshold=0.1 --wavenet_params=../5_2048_double_wavenet_params.json --checkpoint_every 1000 --max_checkpoints=1000"
 TRAIN="python ../train.py"
 GENERATE_PARAMS="--samples=64000 --wavenet_params=../5_2048_double_wavenet_params.json --wav_seed ../../datasets/breakbeats/essential_breaks_00.wav"
@@ -27,27 +27,15 @@ wait
 aws s3 sync ../output ${OUTPUT_DIR}/
 
 cp ../../datasets/breakbeats/essential_breaks_01.wav ../training/abstraction
-${TRAIN} --num_steps=3000  ${TRAIN_PARAMS}
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-2999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-2999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-2999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-2999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.7.wav --temperature 0.7 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-2999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.8.wav --temperature 0.8 &
-wait
-aws s3 sync ../output ${OUTPUT_DIR}/
-
 cp ../../datasets/breakbeats/essential_breaks_02.wav ../training/abstraction
-${TRAIN} --num_steps=6000  ${TRAIN_PARAMS}
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-5999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-5999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-5999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-5999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.7.wav --temperature 0.7 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-5999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.8.wav --temperature 0.8 &
-wait
-aws s3 sync ../output ${OUTPUT_DIR}/
-
 cp ../../datasets/breakbeats/essential_breaks_03.wav ../training/abstraction
-${TRAIN} --num_steps=10000 ${TRAIN_PARAMS}
+cp ../../datasets/breakbeats/essential_breaks_04.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_05.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_06.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_07.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_08.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_09.wav ../training/abstraction
+${TRAIN} --num_steps=10000  ${TRAIN_PARAMS}
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-9999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-9999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-9999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
@@ -56,12 +44,22 @@ CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-9999 ${GENERATE_PARAMS}  
 wait
 aws s3 sync ../output ${OUTPUT_DIR}/
 
-cp ../../datasets/breakbeats/essential_breaks_04.wav ../training/abstraction
-${TRAIN} --num_steps=15000 ${TRAIN_PARAMS}
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.7.wav --temperature 0.7 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.8.wav --temperature 0.8 &
+cp ../../datasets/breakbeats/essential_breaks_10.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_11.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_12.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_13.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_14.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_15.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_16.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_17.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_18.wav ../training/abstraction
+cp ../../datasets/breakbeats/essential_breaks_19.wav ../training/abstraction
+${TRAIN} --num_steps=20000  ${TRAIN_PARAMS}
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-19999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-19999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-19999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-19999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.7.wav --temperature 0.7 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-19999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.8.wav --temperature 0.8 &
 wait
 aws s3 sync ../output ${OUTPUT_DIR}/
+
