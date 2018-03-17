@@ -18,6 +18,7 @@ mkdir -p ../output
 
 cp ../../datasets/breakbeats/essential_breaks_00.wav ../training/abstraction
 ${TRAIN} --num_steps=1000  ${TRAIN_PARAMS}
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.3.wav --temperature 0.3 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
@@ -31,6 +32,7 @@ cp ../../datasets/breakbeats/essential_breaks_02.wav ../training/abstraction
 cp ../../datasets/breakbeats/essential_breaks_03.wav ../training/abstraction
 cp ../../datasets/breakbeats/essential_breaks_04.wav ../training/abstraction
 ${TRAIN} --num_steps=7500 ${TRAIN_PARAMS}
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-7499 ${GENERATE_PARAMS}  --wav_out ../output/output_0.3.wav --temperature 0.3 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-7499 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-7499 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-7499 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
@@ -45,6 +47,7 @@ cp ../../datasets/breakbeats/essential_breaks_07.wav ../training/abstraction
 cp ../../datasets/breakbeats/essential_breaks_08.wav ../training/abstraction
 cp ../../datasets/breakbeats/essential_breaks_09.wav ../training/abstraction
 ${TRAIN} --num_steps=15000 ${TRAIN_PARAMS}
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.3.wav --temperature 0.3 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.4.wav --temperature 0.4 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.5.wav --temperature 0.5 &
 CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-14999 ${GENERATE_PARAMS}  --wav_out ../output/output_0.6.wav --temperature 0.6 &
