@@ -24,6 +24,6 @@ source ~/tf/bin/activate
 pip install magenta-gpu
 
 mkdir -p datasets/breakbeats
-aws s3 cp --recursive s3://wavenet-data/datasets/breakbeats datasets/breakbeats
+aws s3 cp --recursive s3://wavenet-data/datasets/publicenemy datasets/publicenemy
 
 popd
