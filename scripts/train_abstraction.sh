@@ -25,13 +25,13 @@ mkdir -p ../output
 cp "../../datasets/${SONG_00}" ../generation/abstraction/primer_00.wav
 
 cp "../../datasets/${SONG_00}" ../training/abstraction
-${TRAIN} --num_steps=30000  ${TRAIN_PARAMS}
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.3.wav --temperature 0.3 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.4.wav --temperature 0.4 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.5.wav --temperature 0.5 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.6.wav --temperature 0.6 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.7.wav --temperature 0.7 &
-CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-29999 ${GENERATE_PARAMS} --wav_out ../output/output_0.8.wav --temperature 0.8 &
+${TRAIN} --num_steps=60000  ${TRAIN_PARAMS}
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.3.wav --temperature 0.3 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.4.wav --temperature 0.4 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.5.wav --temperature 0.5 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.6.wav --temperature 0.6 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.7.wav --temperature 0.7 &
+CUDA_VISIBLE_DEVICES="" ${GEN} ${MODEL_DIR}/model.ckpt-59999 ${GENERATE_PARAMS} --wav_out ../output/output_0.8.wav --temperature 0.8 &
 wait
 aws s3 sync ../output ${OUTPUT_DIR}/
 
